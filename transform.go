@@ -1,16 +1,24 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var espaceAvant = regexp.MustCompile(`\s+([.,!?:;]+)`)
+var espaceApres = regexp.MustCompile(`([.,!?:;]+)([^\s.,!?:;])`)
 
 func Process(input string) string {
 	mots := strings.Fields(input) // découpe le texte en liste de mots
 
 	mots = applyModifiers(mots)
 
-	return strings.Join(mots, " ") // recolle les mots avec un espace
+	texte := strings.Join(mots, " ") // recolle les mots avec un espace
+
+	texte = fixPunctuation(texte) // corrige la ponctuation
+
+	return texte
 }
 
 func applyModifiers(mots []string) []string {
@@ -91,4 +99,12 @@ func capitalize(mot string) string {
 		return mot
 	}
 	return strings.ToUpper(mot[:1]) + strings.ToLower(mot[1:])
+}
+
+func fixPunctuation(texte string) string {
+	// Supprime les espaces avant la ponctuation 
+	texte = espaceAvant.ReplaceAllString(texte, "$1")
+	// Ajoute un espace après la ponctuation si besoin
+	texte = espaceApres.ReplaceAllString(texte, "$1 $2")
+	return texte
 }
