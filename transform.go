@@ -16,81 +16,77 @@ func Process(input string) string {
 	texte = fixPunctuation(texte)    // corrige la ponctuation
 	mots = strings.Fields(texte)     // redécoupe le texte corrigé
 	mots = fixQuotes(mots)           // corrige les apostrophes
+	mots = fixArticles(mots)         // corrige les articles "a" et "an"
 	texte = strings.Join(mots, " ")  // recolle
 	return texte
 }
 
+// applyModifiers parcourt les mots et applique les marqueurs
+// (up), (low), (cap), (hex), (bin), (up, n), (low, n), (cap, n)
+// aux mots qui les précèdent. Les marqueurs sont retirés du texte.
 func applyModifiers(mots []string) []string {
 	var result []string
 	for i := 0; i < len(mots); i++ {
 		mot := mots[i]
-		if mot == "(up)" {
-			if len(result) > 0 {
-				result[len(result)-1] = strings.ToUpper(result[len(result)-1])
-			}
-		} else if mot == "(low)" {
-			if len(result) > 0 {
-				result[len(result)-1] = strings.ToLower(result[len(result)-1])
-			}
-		} else if mot == "(cap)" {
-			if len(result) > 0 {
-				result[len(result)-1] = capitalize(result[len(result)-1])
-			}
-		} else if mot == "(up," && i+1 < len(mots) {
-			texteNombre := strings.TrimSuffix(mots[i+1], ")") // "2)" → "2"
-			n, err := strconv.Atoi(texteNombre)               // "2"  → 2
+
+		switch {
+		// Marqueur simple : (up), (low), (cap), (hex), (bin)
+		case mot == "(up)" || mot == "(low)" || mot == "(cap)" || mot == "(hex)" || mot == "(bin)":
+			nom := strings.Trim(mot, "()") // "(up)" → "up"
+			applyToLastWords(result, nom, 1)
+
+		// Marqueur avec un nombre : "(up," suivi de "2)"
+		case (mot == "(up," || mot == "(low," || mot == "(cap,") && i+1 < len(mots):
+			nom := strings.Trim(mot, "(,")                             // "(up," → "up"
+			n, err := strconv.Atoi(strings.TrimSuffix(mots[i+1], ")")) // "2)" → 2
 			if err == nil {
-				if n > len(result) {
-					n = len(result) // protection : pas plus de mots qu'il n'y en a
-				}
-				for j := len(result) - n; j < len(result); j++ {
-					result[j] = strings.ToUpper(result[j])
-				}
+				applyToLastWords(result, nom, n)
 			}
 			i++ // saute le mot "2)"
-		} else if mot == "(low," && i+1 < len(mots) {
-			texteNombre := strings.TrimSuffix(mots[i+1], ")")
-			n, err := strconv.Atoi(texteNombre)
-			if err == nil {
-				if n > len(result) {
-					n = len(result)
-				}
-				for j := len(result) - n; j < len(result); j++ {
-					result[j] = strings.ToLower(result[j])
-				}
-			}
-			i++
-		} else if mot == "(cap," && i+1 < len(mots) {
-			texteNombre := strings.TrimSuffix(mots[i+1], ")")
-			n, err := strconv.Atoi(texteNombre)
-			if err == nil {
-				if n > len(result) {
-					n = len(result)
-				}
-				for j := len(result) - n; j < len(result); j++ {
-					result[j] = capitalize(result[j])
-				}
-			}
-			i++
-		} else if mot == "(hex)" {
-			if len(result) > 0 {
-				n, err := strconv.ParseInt(result[len(result)-1], 16, 64)
-				if err == nil {
-					result[len(result)-1] = strconv.FormatInt(n, 10)
-				}
-			}
-		} else if mot == "(bin)" {
-			if len(result) > 0 {
-				n, err := strconv.ParseInt(result[len(result)-1], 2, 64)
-				if err == nil {
-					result[len(result)-1] = strconv.FormatInt(n, 10)
-				}
-			}
-		} else {
+
+		// Mot normal
+		default:
 			result = append(result, mot)
 		}
 	}
 	return result
+}
+
+// applyToLastWords applique la transformation "nom" aux n derniers mots.
+func applyToLastWords(mots []string, nom string, n int) {
+	if n > len(mots) {
+		n = len(mots) // protection : pas plus de mots qu'il n'y en a
+	}
+	for j := len(mots) - n; j < len(mots); j++ {
+		mots[j] = transformWord(mots[j], nom)
+	}
+}
+
+// transformWord applique une seule transformation à un mot.
+func transformWord(mot string, nom string) string {
+	switch nom {
+	case "up":
+		return strings.ToUpper(mot)
+	case "low":
+		return strings.ToLower(mot)
+	case "cap":
+		return capitalize(mot)
+	case "hex":
+		return convertBase(mot, 16)
+	case "bin":
+		return convertBase(mot, 2)
+	}
+	return mot
+}
+
+// convertBase convertit un nombre écrit dans une base (16 ou 2) en décimal.
+// Si le mot n'est pas un nombre valide, il est renvoyé tel quel.
+func convertBase(mot string, base int) string {
+	n, err := strconv.ParseInt(mot, base, 64)
+	if err != nil {
+		return mot
+	}
+	return strconv.FormatInt(n, 10)
 }
 
 func capitalize(mot string) string {
@@ -126,4 +122,16 @@ func fixQuotes(mots []string) []string {
 		}
 	}
 	return result
+}
+
+func fixArticles(mots []string) []string {
+	for i := 0; i < len(mots)-1; i++ {
+		if mots[i] == "a" || mots[i] == "A" {
+			premiere := strings.ToLower(mots[i+1][:1]) // 1re lettre du mot suivant, en minuscule
+			if strings.Contains("aeiouh", premiere) {
+				mots[i] = mots[i] + "n"
+			}
+		}
+	}
+	return mots
 }
