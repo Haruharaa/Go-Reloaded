@@ -23,9 +23,20 @@ func applyModifiers(mots []string) []string {
 			if len(result) > 0 {
 				result[len(result)-1] = strings.ToLower(result[len(result)-1])
 			}
+		} else if mot == "(cap)" {
+			if len(result) > 0 {
+				result[len(result)-1] = capitalize(result[len(result)-1])
+			}
 		} else {
 			result = append(result, mot)
 		}
 	}
 	return result
+}
+
+func capitalize(mot string) string {
+	if len(mot) == 0 {
+		return mot
+	}
+	return strings.ToUpper(mot[:1]) + strings.ToLower(mot[1:])
 }
