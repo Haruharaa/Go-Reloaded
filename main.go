@@ -15,7 +15,7 @@ func main() {
 		fmt.Println("Error reading file:", err)
 		return
 	}
-	err = os.WriteFile(os.Args[2], data, 0644)
+	err = os.WriteFile(os.Args[2], []byte(Process(string(data))), 0644)
 	if err != nil {
 		fmt.Println("Error writing file:", err)
 		return
