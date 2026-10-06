@@ -65,6 +65,20 @@ func applyModifiers(mots []string) []string {
 				}
 			}
 			i++
+		} else if mot == "(hex)" {
+			if len(result) > 0 {
+				n, err := strconv.ParseInt(result[len(result)-1], 16, 64)
+				if err == nil {
+					result[len(result)-1] = strconv.FormatInt(n, 10)
+				}
+			}
+		} else if mot == "(bin)" {
+			if len(result) > 0 {
+				n, err := strconv.ParseInt(result[len(result)-1], 2, 64)
+				if err == nil {
+					result[len(result)-1] = strconv.FormatInt(n, 10)
+				}
+			}
 		} else {
 			result = append(result, mot)
 		}
