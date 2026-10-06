@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -14,7 +15,8 @@ func Process(input string) string {
 
 func applyModifiers(mots []string) []string {
 	var result []string
-	for _, mot := range mots {
+	for i := 0; i < len(mots); i++ {
+		mot := mots[i]
 		if mot == "(up)" {
 			if len(result) > 0 {
 				result[len(result)-1] = strings.ToUpper(result[len(result)-1])
@@ -27,6 +29,42 @@ func applyModifiers(mots []string) []string {
 			if len(result) > 0 {
 				result[len(result)-1] = capitalize(result[len(result)-1])
 			}
+		} else if mot == "(up," && i+1 < len(mots) {
+			texteNombre := strings.TrimSuffix(mots[i+1], ")") // "2)" → "2"
+			n, err := strconv.Atoi(texteNombre)               // "2"  → 2
+			if err == nil {
+				if n > len(result) {
+					n = len(result) // protection : pas plus de mots qu'il n'y en a
+				}
+				for j := len(result) - n; j < len(result); j++ {
+					result[j] = strings.ToUpper(result[j])
+				}
+			}
+			i++ // saute le mot "2)"
+		} else if mot == "(low," && i+1 < len(mots) {
+			texteNombre := strings.TrimSuffix(mots[i+1], ")")
+			n, err := strconv.Atoi(texteNombre)
+			if err == nil {
+				if n > len(result) {
+					n = len(result)
+				}
+				for j := len(result) - n; j < len(result); j++ {
+					result[j] = strings.ToLower(result[j])
+				}
+			}
+			i++
+		} else if mot == "(cap," && i+1 < len(mots) {
+			texteNombre := strings.TrimSuffix(mots[i+1], ")")
+			n, err := strconv.Atoi(texteNombre)
+			if err == nil {
+				if n > len(result) {
+					n = len(result)
+				}
+				for j := len(result) - n; j < len(result); j++ {
+					result[j] = capitalize(result[j])
+				}
+			}
+			i++
 		} else {
 			result = append(result, mot)
 		}
