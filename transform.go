@@ -10,14 +10,13 @@ var espaceAvant = regexp.MustCompile(`\s+([.,!?:;]+)`)
 var espaceApres = regexp.MustCompile(`([.,!?:;]+)([^\s.,!?:;])`)
 
 func Process(input string) string {
-	mots := strings.Fields(input) // découpe le texte en liste de mots
-
-	mots = applyModifiers(mots)
-
+	mots := strings.Fields(input)    // découpe le texte en liste de mots
+	mots = applyModifiers(mots)      // applique (up), (hex), (cap, 2)...
 	texte := strings.Join(mots, " ") // recolle les mots avec un espace
-
-	texte = fixPunctuation(texte) // corrige la ponctuation
-
+	texte = fixPunctuation(texte)    // corrige la ponctuation
+	mots = strings.Fields(texte)     // redécoupe le texte corrigé
+	mots = fixQuotes(mots)           // corrige les apostrophes
+	texte = strings.Join(mots, " ")  // recolle
 	return texte
 }
 
@@ -102,9 +101,29 @@ func capitalize(mot string) string {
 }
 
 func fixPunctuation(texte string) string {
-	// Supprime les espaces avant la ponctuation 
+	// Supprime les espaces avant la ponctuation
 	texte = espaceAvant.ReplaceAllString(texte, "$1")
 	// Ajoute un espace après la ponctuation si besoin
 	texte = espaceApres.ReplaceAllString(texte, "$1 $2")
 	return texte
+}
+
+func fixQuotes(mots []string) []string {
+	var result []string
+	ouvert := false
+	for i := 0; i < len(mots); i++ {
+		mot := mots[i]
+		if mot == "'" && !ouvert && i+1 < len(mots) {
+			// apostrophe OUVRANTE : on la colle au mot suivant
+			mots[i+1] = "'" + mots[i+1]
+			ouvert = true
+		} else if mot == "'" && ouvert && len(result) > 0 {
+			// apostrophe FERMANTE : on la colle au mot précédent
+			result[len(result)-1] = result[len(result)-1] + "'"
+			ouvert = false
+		} else {
+			result = append(result, mot)
+		}
+	}
+	return result
 }
