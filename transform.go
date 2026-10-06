@@ -16,7 +16,6 @@ func Process(input string) string {
 	texte = fixPunctuation(texte)    // corrige la ponctuation
 	mots = strings.Fields(texte)     // redécoupe le texte corrigé
 	mots = fixQuotes(mots)           // corrige les apostrophes
-	mots = fixArticles(mots)         // corrige les articles "a" et "an"
 	texte = strings.Join(mots, " ")  // recolle
 	return texte
 }
@@ -127,16 +126,4 @@ func fixQuotes(mots []string) []string {
 		}
 	}
 	return result
-}
-
-func fixArticles(mots []string) []string {
-	for i := 0; i < len(mots)-1; i++ {
-		if mots[i] == "a" || mots[i] == "A" {
-			premiere := strings.ToLower(mots[i+1][:1]) // 1re lettre du mot suivant, en minuscule
-			if strings.Contains("aeiouh", premiere) {
-				mots[i] = mots[i] + "n"
-			}
-		}
-	}
-	return mots
 }
